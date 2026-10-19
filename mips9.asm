@@ -128,16 +128,16 @@ jr $ra
 draw_pixel:
 subi $sp, $sp, 8
 sw   $ra, 4($sp)
-sw   $a2, 0($sp)       # preserve color input across child call
+sw   $a2, 0($sp)       # preserve color
 jal  calc_address      # returns target location memory address in $v0
 lw   $a2, 0($sp)
-sw   $a2, 0($v0)       # store color hex value directly onto display pixel
+sw   $a2, 0($v0)       # store color onto pixel
 lw   $ra, 4($sp)
 addi $sp, $sp, 8
 jr   $ra
     
 
-# Clear Screen: $a0 = base address, $a1 = color
+#$a0 = base address, $a1 = color
 print_board:
     li $t2, 1024           # 32 * 32 total matrix units
 board_loop:
