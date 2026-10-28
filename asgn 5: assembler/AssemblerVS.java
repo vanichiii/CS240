@@ -4,6 +4,11 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 
 /*
  * Toy MIPS assembler. Java 8+. Prints only; creates NO output files.
@@ -164,8 +169,7 @@ public class Assembler {
             writeBinaryFile(result, "fizzbuzz.mhc-bin");
             
             System.out.println(renderView(result, 1));
-        }
-        System.out.println("Assembly completed successfully.");
+            System.out.println("Assembly completed successfully.");
         } catch (IllegalArgumentException e) {
             System.out.println("Assembly failed: " + e);
         }
