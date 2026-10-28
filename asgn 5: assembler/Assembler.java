@@ -368,14 +368,24 @@ public class Assembler {
                 count(a, 0);
                 emit("sll $zero, $zero, 0", line, text);
                 break;
-            case "ble":
+            case "ble":                 //added in since line 66 has ble
                 count(a, 3);
                 reg(a[0]);
-                reg(a[1]);
+                
+                //determines if the second operand is a register or an immediate value
+                if (a[1].startsWith("$")) {
+                    reg(a[1]);
 
-                emit("slt $at, " + a[1] + ", " + a[0], line, text);
-                emit("beq $at, $zero, " + a[2], line, text);
-    break;
+                    emit("slt $at, " + a[1] + ", " + a[0], line, text);
+                    emit("beq $at, $zero, " + a[2], line, text);
+                } else {
+                    int limit = number(a[1]);
+
+                    emit("slti $at, " + a[0] + ", " + (limit + 1), line, text);
+                    emit("bne $at, $zero, " + a[2], line, text);
+            `   }
+                break;
+    
             default:
                 emit(text, line, text);
         }
