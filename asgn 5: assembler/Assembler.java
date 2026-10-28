@@ -9,6 +9,7 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.io.DataOutputStream;
 
 /*
  * Toy MIPS assembler. Java 8+. Prints only; creates NO output files.
@@ -197,7 +198,11 @@ public class Assembler {
             out.close();
     }
     private static void writeBinaryFile(Result result, String filename) throws IOException {
-        FileOutputStream out = new FileOutputStream(filename);
+        DataOutputStream out = new DataOutputStream(new FileOutputStream(filename));
+
+        out.writeInt(result.text.length);
+        out.writeInt(result.data.length);
+        
         out.write(result.text);
         out.write(result.data);
         out.close();

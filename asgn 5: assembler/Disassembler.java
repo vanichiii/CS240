@@ -3,8 +3,10 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Scanner;
 import java.util.Set;
 import java.io.FileOutputStream;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.nio.file.Files;
@@ -60,18 +62,35 @@ public class Disassembler {
 
     public Disassembler() {
     public static void main(String[] args) throws IOException {
+        try (Scanner scanner = new Scanner(Files.newBufferedReader(Paths.get(args[1])))) {
         if (args.length != 2) {
             System.err.println("Usage: java Disassembler <input file> <output file>");
             System.exit(1);
         }
+      
+        if (!args[0].equals("fizzbuzz.mhc-ascii") || !args[0].equals("fizzbuzz.mhc-bin")) {
+            System.err.println("Error: Input file must be either fizzbuzz.mhc-ascii or fizzbuzz.mhc-bin");
+            System.exit(1);
+        }
+        if (scanner.hasNext()) {
+            String reader = scanner.next();
+            if (reader.equals("fizzbuzz.mhc-ascii")) {
+                String sourceASCII = Files.readString(Paths.get("fizzbuzz.mhc-ascii"));
+            } else if (reader.equals("fizzbuzz.mhc-bin")) {
+                String sourceBinary = Files.readString(Paths.get("fizzbuzz.mhc-bin"));
+            } else {
+                System.err.println("Error: Input file must be either fizzbuzz.mhc-ascii or fizzbuzz.mhc-bin");
+                System.exit(1);
+            }
+        }
+        
+        Result resultASCII = assemble(sourceASCII);
+        Result resultBinary = Assembler.readBinaryFile(sourceBinary);
 
-        String inputFile = args[0];
-        String outputFile = args[1];
-
-        Result result = Assembler.readBinaryFile(inputFile);
-        writeTextFile(result, outputFile);
+        writeTextFile(resultASCII, outputFile);
+        writeTextFile(resultBinary, outputFile);
     }
-
+}
     private static void writeTextFile(Result result, String filename) throws IOException {
         PrintWriter out = new PrintWriter(new FileWriter(filename));
     
