@@ -4,6 +4,11 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 
 /*
  * Toy MIPS assembler. Java 8+. Prints only; creates NO output files.
@@ -157,16 +162,49 @@ public class Assembler {
 
     public static void main(String[] args) {
         try {
-            Result result = assemble(DEMO);
+            
+            String source = Files.readString(Path.of("fizzbuzz.asm"));
+            Result result = assemble(source);
 
-            for (int i = 0; i < 10 && i < result.instructions.size(); i++) {
-                System.out.println(binaryListingLine(result.instructions.get(i)));
-            }
+            writeAsciiFile(result, "fizzbuzz.mhc-ascii");
+            writeBinaryFile(result, "fizzbuzz.mhc-bin");
+            
+            System.out.println(renderView(result, 1));
+
+            System.out.println("Assembly completed successfully.");
+
         } catch (IllegalArgumentException e) {
             System.out.println("Assembly failed: " + e);
         }
+        
     }
+    private static void writeAsciiFile(Result result, String filename) throws IOException {
 
+        try (PrintWriter out = new PrintWriter(filename)) {
+            
+            out.println("TEXT " + result.text.length);
+            out.println("DATA " + result.data.length);
+
+            for (byte b : result.text) {
+                out.println(String.format("%8s",
+                        Integer.toBinaryString(b & 0xFF))
+                        .replace(' ', '0'));
+            }
+
+            for (byte b : result.data) {
+                out.println(String.format("%8s",
+                        Integer.toBinaryString(b & 0xFF))
+                        .replace(' ', '0'));
+            }
+        }
+    }
+    private static void writeBinaryFile(Result result, String filename) throws IOException {
+
+        try (FileOutputStream out = new FileOutputStream(filename)) {
+            out.write(result.text);
+            out.write(result.data);
+        }
+    }
     static String renderView(Result result, int view) {
         StringBuilder output = new StringBuilder();
         if (view == 1) {
