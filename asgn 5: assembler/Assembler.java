@@ -165,9 +165,9 @@ public class Assembler {
             String source = Files.readString(Paths.get("mips8.asm"));
             Result result = assemble(source);
 
-            writeAsciiFile(result, "mips8.mhc-ascii");
-            writeBinaryFile(result, "mips8.mhc-bin");
-            
+            writeAsciiFile(result, "fizzbuzz.mhc-ascii");
+            writeBinaryFile(result, "fizzbuzz.mhc-bin");
+
             System.out.println(renderView(result, 1));
             System.out.println("Assembly completed successfully.");
 
