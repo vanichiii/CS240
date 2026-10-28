@@ -1,102 +1,69 @@
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Scanner;
-import java.util.Set;
-import java.io.FileOutputStream;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.PrintWriter;
-import java.nio.file.Files;
-import java.nio.file.Paths;
+import java.io.*;
+import java.nio.file.*;
 
 
 public class Disassembler {
-   static final int TEXT_BASE = 0x00400000;
-   static final int DATA_BASE = 0x10010000;
-   static final boolean RAW_CHARACTER_VIEW = false;
-
-   private static final String[] REGISTER_NAMES = {
-        "zero", "at", "v0", "v1", "a0", "a1", "a2", "a3",
-        "t0", "t1", "t2", "t3", "t4", "t5", "t6", "t7",
-        "s0", "s1", "s2", "s3", "s4", "s5", "s6", "s7",
-        "t8", "t9", "k0", "k1", "gp", "sp", "fp", "ra"
-    };
-
-    static class Instruction {
-        final int line, address;
-        final String text, sourceText;
-        Instruction(int line, int address, String text, String sourceText) {
-            this.line = line;
-            this.address = address;
-            this.text = text;
-            this.sourceText = sourceText;
-        }
-    }
-
-    static class EncodedInstruction {
-        final Instruction source;
-        final int word;
-        final String mips;
-        final Map<String, Integer> labelLines;
-        EncodedInstruction(Instruction source, int word, String mips,
-                           Map<String, Integer> labelLines) {
-            this.source = source;
-            this.word = word;
-            this.mips = mips;
-            this.labelLines = labelLines;
-        }
-    }
-
-    static class Result {
-        final byte[] text, data;
-        final List<EncodedInstruction> instructions;
-        Result(byte[] text, byte[] data, List<EncodedInstruction> instructions) {
-            this.text = text;
-            this.data = data;
-            this.instructions = instructions;
-        }
-    }
-
-    public Disassembler() {
-    public static void main(String[] args) throws IOException {
-        try (Scanner scanner = new Scanner(Files.newBufferedReader(Paths.get(args[1])))) {
+   
+   static class MachineCode {
+    byte[] text, data;
+    MachineCode(byte[] text, byte[] data) {
+        this.text = text;
+        this.data = data;
+   }
+}
+   
+   public static void main(String[] args) throws IOException {
         if (args.length != 2) {
             System.err.println("Usage: java Disassembler <input file> <output file>");
             System.exit(1);
         }
-      
-        if (!args[0].equals("fizzbuzz.mhc-ascii") || !args[0].equals("fizzbuzz.mhc-bin")) {
-            System.err.println("Error: Input file must be either fizzbuzz.mhc-ascii or fizzbuzz.mhc-bin");
+       try {
+        MachineCode mc;
+
+        if (args[0].endsWith(".mhc-ascii")) {
+            mc = readAsciiFile(args[0]);
+        } else if (args[0].endsWith(".mhc-bin")) {
+            mc = readBinaryFile(args[0]);
+        } else {
+            throw (new IllegalArgumentException("Input file must be either .mhc-ascii or .mhc-bin"));
+        }
+
+        String disassembled = disassemble(mc.text, mc.data);
+        Files.write(Paths.get(args[1]), disassembled.getBytes());
+
+    } catch (IOException e) {
+            System.err.println("Error reading or writing files: " + e.getMessage());
+            System.exit(1);
+        } catch (IllegalArgumentException e) {
+            System.err.println("Error: " + e.getMessage());
             System.exit(1);
         }
-        if (scanner.hasNext()) {
-            String reader = scanner.next();
-            if (reader.equals("fizzbuzz.mhc-ascii")) {
-                String sourceASCII = Files.readString(Paths.get("fizzbuzz.mhc-ascii"));
-            } else if (reader.equals("fizzbuzz.mhc-bin")) {
-                String sourceBinary = Files.readString(Paths.get("fizzbuzz.mhc-bin"));
-            } else {
-                System.err.println("Error: Input file must be either fizzbuzz.mhc-ascii or fizzbuzz.mhc-bin");
-                System.exit(1);
-            }
+    }
+
+    static MachineCode readAsciiFile(String filename) throws IOException {
+        try (BufferedReader reader = new BufferedReader(new FileReader(filename))) {
+        String textLength = reader.readLine();
+        String dataLength = reader.readLine();
+
+        int textLengthInt = Integer.parseInt(textLength);
+        int dataLengthInt = Integer.parseInt(dataLength);
+
+        byte[] text = new byte[textLengthInt];
+        byte[] data = new byte[dataLengthInt];
+
+        for (int i = 0; i < textLengthInt; i++) {
+            text[i] = (byte) Integer.parseInt(reader.readLine(), 2);
         }
-        
-        Result resultASCII = assemble(sourceASCII);
-        Result resultBinary = Assembler.readBinaryFile(sourceBinary);
 
-        writeTextFile(resultASCII, outputFile);
-        writeTextFile(resultBinary, outputFile);
+        for (int i = 0; i < dataLengthInt; i++) {
+            data[i] = (byte) Integer.parseInt(reader.readLine(), 2);
+        }
+
     }
-}
-    private static void writeTextFile(Result result, String filename) throws IOException {
-        PrintWriter out = new PrintWriter(new FileWriter(filename));
-    
+        return new MachineCode(text, data);
     }
 
-    
-    
-    }
+
+
 }
+
