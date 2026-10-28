@@ -162,7 +162,7 @@ public class Assembler {
 
     public static void main(String[] args) {
         try {
-            String source = Files.readString(Path.of("mips8.asm"));
+            String source = Files.readString(Paths.get("mips8.asm"));
             Result result = assemble(source);
 
             writeAsciiFile(result, "mips8.mhc-ascii");
@@ -170,37 +170,36 @@ public class Assembler {
             
             System.out.println(renderView(result, 1));
             System.out.println("Assembly completed successfully.");
+
         } catch (IllegalArgumentException e) {
             System.out.println("Assembly failed: " + e);
+        } catch (IOException e) {
+            System.out.println("File I/O error: " + e);
         }
+
     }
-    private static void writeAsciiFile(Result result, String filename)
-            throws IOException {
+    private static void writeAsciiFile(Result result, String filename) throws IOException {
 
-        try (PrintWriter out = new PrintWriter(filename)) {
-            out.println("TEXT " + result.text.length);
-            out.println("DATA " + result.data.length);
+        PrintWriter out = new PrintWriter(filename);
+        out.println("TEXT " + result.text.length);
+        out.println("DATA " + result.data.length);
 
-            for (byte b : result.text) {
-                out.println(String.format("%8s",
-                        Integer.toBinaryString(b & 0xFF))
-                        .replace(' ', '0'));
+        for (byte b : result.text) {
+            out.println(String.format("%8s",
+                Integer.toBinaryString(b & 0xFF)).replace(' ', '0'));
             }
 
-            for (byte b : result.data) {
-                out.println(String.format("%8s",
-                        Integer.toBinaryString(b & 0xFF))
-                        .replace(' ', '0'));
+        for (byte b : result.data) {
+            out.println(String.format("%8s",
+                Integer.toBinaryString(b & 0xFF)).replace(' ', '0'));
             }
-        }
-    }
-    private static void writeBinaryFile(Result result, String filename)
-            throws IOException {
 
-        try (FileOutputStream out = new FileOutputStream(filename)) {
-            out.write(result.text);
-            out.write(result.data);
-        }
+    }
+    private static void writeBinaryFile(Result result, String filename) throws IOException {
+        FileOutputStream out = new FileOutputStream(filename);
+        out.write(result.text);
+        out.write(result.data);
+        out.close();
     }
     static String renderView(Result result, int view) {
         StringBuilder output = new StringBuilder();
@@ -230,7 +229,7 @@ public class Assembler {
     }
 
     static Result assemble(String source) {
-        AssemblerVS assembler = new AssemblerVS();
+        Assembler assembler = new Assembler();
         assembler.firstPass(source);
         if (assembler.instructions.isEmpty()) fail("No instructions found.");
         for (String name : assembler.globals) assembler.label(name);
@@ -369,6 +368,14 @@ public class Assembler {
                 count(a, 0);
                 emit("sll $zero, $zero, 0", line, text);
                 break;
+            case "ble":
+                count(a, 3);
+                reg(a[0]);
+                reg(a[1]);
+
+                emit("slt $at, " + a[1] + ", " + a[0], line, text);
+                emit("beq $at, $zero, " + a[2], line, text);
+    break;
             default:
                 emit(text, line, text);
         }
