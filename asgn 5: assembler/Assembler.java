@@ -383,7 +383,7 @@ public class Assembler {
 
                     emit("slti $at, " + a[0] + ", " + (limit + 1), line, text);
                     emit("bne $at, $zero, " + a[2], line, text);
-            `   }
+               }
                 break;
     
             default:
@@ -408,6 +408,11 @@ public class Assembler {
             case "lui":
                 count(a, 2);
                 return iType(15, 0, reg(a[0]), range(value(a[1]), 0, 65535));
+            case "slti":
+                count(a, 3);
+                int sltiImmediate = number(a[2]);
+                range(sltiImmediate, -32768, 32767);
+                return iType(10, reg(a[1]), reg(a[0]), sltiImmediate);
             case "addu":
                 count(a, 3);
                 return rType(reg(a[1]), reg(a[2]), reg(a[0]), 0, 0x21);
