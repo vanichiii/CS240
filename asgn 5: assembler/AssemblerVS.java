@@ -45,7 +45,7 @@ import java.nio.file.Paths;
  *   Explicit nop instructions in user input are still assembled normally.
  * - File input is intentionally omitted for restricted browser runtimes.
  */
-public class Assembler {
+public class AssemblerVS {
     static final int TEXT_BASE = 0x00400000;
     static final int DATA_BASE = 0x10010000;
     static final boolean RAW_CHARACTER_VIEW = false;
