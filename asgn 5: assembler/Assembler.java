@@ -193,7 +193,8 @@ public class Assembler {
             out.println(String.format("%8s",
                 Integer.toBinaryString(b & 0xFF)).replace(' ', '0'));
             }
-
+        
+            out.close();
     }
     private static void writeBinaryFile(Result result, String filename) throws IOException {
         FileOutputStream out = new FileOutputStream(filename);
