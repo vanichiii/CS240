@@ -45,7 +45,7 @@ import java.nio.file.Paths;
  *   Explicit nop instructions in user input are still assembled normally.
  * - File input is intentionally omitted for restricted browser runtimes.
  */
-public class AssemblerVS {
+public class Assembler {
     static final int TEXT_BASE = 0x00400000;
     static final int DATA_BASE = 0x10010000;
     static final boolean RAW_CHARACTER_VIEW = false;
@@ -162,11 +162,11 @@ public class AssemblerVS {
 
     public static void main(String[] args) {
         try {
-            String source = Files.readString(Path.of("fizzbuzz.asm"));
+            String source = Files.readString(Path.of("mips8.asm"));
             Result result = assemble(source);
 
-            writeAsciiFile(result, "fizzbuzz.mhc-ascii");
-            writeBinaryFile(result, "fizzbuzz.mhc-bin");
+            writeAsciiFile(result, "mips8.mhc-ascii");
+            writeBinaryFile(result, "mips8.mhc-bin");
             
             System.out.println(renderView(result, 1));
             System.out.println("Assembly completed successfully.");
@@ -230,7 +230,7 @@ public class AssemblerVS {
     }
 
     static Result assemble(String source) {
-        Assembler assembler = new Assembler();
+        AssemblerVS assembler = new AssemblerVS();
         assembler.firstPass(source);
         if (assembler.instructions.isEmpty()) fail("No instructions found.");
         for (String name : assembler.globals) assembler.label(name);
