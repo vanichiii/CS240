@@ -319,6 +319,18 @@ public class Assembler {
                 for (int i = 0; i < decoded.length(); i++) data.add((byte) decoded.charAt(i));
                 data.add((byte) 0);
                 break;
+            case ".byte":
+                if (!inData) {
+                    fail(".byte must be in .data.");
+                }
+
+                String[] values = value.split("\\s*,\\s*");
+
+                for (String item : values) {
+                    int byteValue = range(number(item), 0, 255);
+                    data.add((byte) byteValue);
+                }
+                break;
             default:
                 fail("Unsupported directive: " + p[0]);
         }

@@ -1,8 +1,12 @@
 import java.io.*;
 import java.nio.file.*;
+import java.util.HashSet;
+import java.util.Set;
 
 
 public class Disassembler {
+    static final int TEXT_BASE = 0x00400000;
+
    static class MachineCode {
     byte[] text, data;
     MachineCode(byte[] text, byte[] data) {
@@ -97,6 +101,14 @@ public class Disassembler {
             return new MachineCode(text, data);
         }
     }
+    
+    static String labelName(int address) {
+        return String.format("L%08X", address);
+    }
+
+
+
+
 
     //ensures big-endian order when converting bytes to int
     static int word(byte[] bytes, int index) {
@@ -106,81 +118,158 @@ public class Disassembler {
                (bytes[index + 3] & 0xFF);
     }
     
-    static String decode(int word) {
-        int opcode = word >>> 26;
+    static String decode(int instruction, int pc) {
+    int opcode = instruction >>> 26;
 
-        int rs = (word >>> 21) & 31;
-        int rt = (word >>> 16) & 31;
-        int rd = (word >>> 11) & 31;
-        int funct = word & 63;
-        int immediate = (short)(word & 0xFFFF);
+    int rs = (instruction >>> 21) & 31;
+    int rt = (instruction >>> 16) & 31;
+    int rd = (instruction >>> 11) & 31;
+    int shamt = (instruction >>> 6) & 31;
+    int funct = instruction & 63;
+    int immediate = (short)(instruction & 0xFFFF);
 
-        if (opcode == 0) {
-            if (funct == 12) return "syscall";
-            if (funct == 16) return "mfhi $" + register(rd);
-            if (funct == 26)
-                return "div $" + register(rs) + ", $" + register(rt);
-            if (funct == 33)
-                return "addu $" + register(rd) + ", $" +
-                    register(rs) + ", $" + register(rt);
-            if (funct == 42)
-                return "slt $" + register(rd) + ", $" +
-                    register(rs) + ", $" + register(rt);
-        }
+    if (opcode == 0) {
+        if (funct == 0)
+            return "sll $" + register(rd) + ", $" +
+                   register(rt) + ", " + shamt;
 
-        if (opcode == 2) {
-            int target = ((word & 0x03FFFFFF) << 2) | 0x00400000;
-            return "j 0x" + Integer.toHexString(target);
-        }
-        if (opcode == 3) {
-            int target = ((word & 0x03FFFFFF) << 2) | 0x00400000;
-            return "jal 0x" + Integer.toHexString(target);
-        }
-        if (opcode == 4)
-            return "beq $" + register(rs) + ", $" +
-                register(rt) + ", TARGET";
+        if (funct == 8)
+            return "jr $" + register(rs);
 
-        if (opcode == 5)
-            return "bne $" + register(rs) + ", $" +
-                register(rt) + ", TARGET";
+        if (funct == 12)
+            return "syscall";
 
-        if (opcode == 8)
-            return "addi $" + register(rt) + ", $" +
-                register(rs) + ", " + immediate;
+        if (funct == 16)
+            return "mfhi $" + register(rd);
 
-        if (opcode == 9)
-            return "addiu $" + register(rt) + ", $" +
-                register(rs) + ", " + immediate;
+        if (funct == 26)
+            return "div $" + register(rs) + ", $" + register(rt);
 
-        if (opcode == 10)
-            return "slti $" + register(rt) + ", $" +
-                register(rs) + ", " + immediate;
+        if (funct == 33)
+            return "addu $" + register(rd) + ", $" +
+                   register(rs) + ", $" + register(rt);
 
-        if (opcode == 13)
-            return "ori $" + register(rt) + ", $" +
-                register(rs) + ", " + (word & 0xFFFF);
-
-        if (opcode == 15)
-            return "lui $" + register(rt) + ", " + (word & 0xFFFF);
-
-        throw new IllegalArgumentException(
-            "Unsupported opcode: " + opcode
-        );
+        if (funct == 42)
+            return "slt $" + register(rd) + ", $" +
+                   register(rs) + ", $" + register(rt);
     }
 
-    public static String disassemble(byte[] text, byte[] data) {
-        StringBuilder output = new StringBuilder();
-        output.append(".data\n");
-        output.append("# Data bytes: ").append(text.length).append("\n");
-        for (int i = 0; i < text.length; i += 4) {
-            int word = word(text, i);
-            String instruction = decode(word);
-            int address = 0x00400000 + i; // Assuming text segment starts at 0x00400000
-            output.append(String.format("%08X: %s\n", address, instruction));
+    if (opcode == 2 || opcode == 3) {
+        int target = ((pc + 4) & 0xF0000000)
+                   | ((instruction & 0x03FFFFFF) << 2);
+
+        return (opcode == 2 ? "j " : "jal ")
+               + labelName(target);
+    }
+
+    if (opcode == 4 || opcode == 5) {
+        int offset = (short)(instruction & 0xFFFF);
+        int target = pc + 4 + offset * 4;
+
+        return (opcode == 4 ? "beq " : "bne ")
+               + "$" + register(rs) + ", $"
+               + register(rt) + ", "
+               + labelName(target);
+    }
+
+    if (opcode == 8)
+        return "addi $" + register(rt) + ", $" +
+               register(rs) + ", " + immediate;
+
+    if (opcode == 9)
+        return "addiu $" + register(rt) + ", $" +
+               register(rs) + ", " + immediate;
+
+    if (opcode == 10)
+        return "slti $" + register(rt) + ", $" +
+               register(rs) + ", " + immediate;
+
+    if (opcode == 13)
+        return "ori $" + register(rt) + ", $" +
+               register(rs) + ", " + (instruction & 0xFFFF);
+
+    if (opcode == 15)
+        return "lui $" + register(rt) + ", " +
+               (instruction & 0xFFFF);
+
+    if (opcode == 35)
+        return "lw $" + register(rt) + ", " +
+               immediate + "($" + register(rs) + ")";
+
+    if (opcode == 43)
+        return "sw $" + register(rt) + ", " +
+               immediate + "($" + register(rs) + ")";
+
+    throw new IllegalArgumentException(
+        "Unsupported opcode: " + opcode
+    );
+    }
+
+    static Set<Integer> findTargets(byte[] text) {
+    Set<Integer> targets = new HashSet<>();
+
+    for (int i = 0; i < text.length; i += 4) {
+        int instruction = word(text, i);
+        int opcode = instruction >>> 26;
+        int pc = TEXT_BASE + i;
+
+        if (opcode == 2 || opcode == 3) {
+            int target = ((pc + 4) & 0xF0000000)
+                       | ((instruction & 0x03FFFFFF) << 2);
+
+            targets.add(target);
         }
 
-        return output.toString();
+        if (opcode == 4 || opcode == 5) {
+            int offset = (short)(instruction & 0xFFFF);
+            int target = pc + 4 + offset * 4;
+
+            targets.add(target);
+        }
     }
+
+    return targets;
+}
+
+   static String disassemble(byte[] text, byte[] data) {
+    Set<Integer> targets = findTargets(text);
+    StringBuilder output = new StringBuilder();
+
+   output.append("\n.text\n");
+   output.append(".globl main\n");
+   output.append("main:\n");
+
+    if (data.length > 0) {
+        output.append("data_bytes: .byte ");
+
+        for (int i = 0; i < data.length; i++) {
+            if (i > 0) {
+                output.append(", ");
+            }
+
+            output.append(data[i] & 0xFF);
+        }
+
+        output.append("\n");
+    }
+
+    output.append("\n.text\n");
+
+    for (int i = 0; i < text.length; i += 4) {
+        int pc = TEXT_BASE + i;
+        int instruction = word(text, i);
+
+        if (targets.contains(pc)) {
+            output.append(labelName(pc)).append(":\n");
+        }
+
+        output.append("    ")
+              .append(decode(instruction, pc))
+              .append("\n");
+    }
+
+    return output.toString();
+}
 
 }
 
