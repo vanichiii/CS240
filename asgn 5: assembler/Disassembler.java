@@ -56,21 +56,27 @@ public class Disassembler {
 
     static MachineCode readAsciiFile(String filename) throws IOException {
         try (BufferedReader reader = new BufferedReader(new FileReader(filename))) {
-        String textLength = reader.readLine();
-        String dataLength = reader.readLine();
+       //read the headeer for text and data seperately
+       String textHeader = reader.readLine();
+       String dataHeader = reader.readLine();
 
-        int textLengthInt = Integer.parseInt(textLength);
-        int dataLengthInt = Integer.parseInt(dataLength);
+       //error for not finding the correct headers
+       if (!textHeader.startsWith("TEXT ") || !dataHeader.startsWith("DATA ")) {
+           throw new IOException("Invalid headers, found: " + textHeader + ", " + dataHeader);
+       }
+
+        int textLength = Integer.parseInt(textHeader.substring(5).trim());
+        int dataLength = Integer.parseInt(dataHeader.substring(5).trim());
         
         //creates array of bytes for text and data
-        byte[] text = new byte[textLengthInt];
-        byte[] data = new byte[dataLengthInt];
+        byte[] text = new byte[textLength];
+        byte[] data = new byte[dataLength];
 
-        for (int i = 0; i < textLengthInt; i++) {
+        for (int i = 0; i < textLength; i++) {
             text[i] = (byte) Integer.parseInt(reader.readLine(), 2);
         }
 
-        for (int i = 0; i < dataLengthInt; i++) {
+        for (int i = 0; i < dataLength; i++) {
             data[i] = (byte) Integer.parseInt(reader.readLine(), 2);
         }
         return new MachineCode(text, data);
@@ -122,6 +128,14 @@ public class Disassembler {
                     register(rs) + ", $" + register(rt);
         }
 
+        if (opcode == 2) {
+            int target = ((word & 0x03FFFFFF) << 2) | 0x00400000;
+            return "j 0x" + Integer.toHexString(target);
+        }
+        if (opcode == 3) {
+            int target = ((word & 0x03FFFFFF) << 2) | 0x00400000;
+            return "jal 0x" + Integer.toHexString(target);
+        }
         if (opcode == 4)
             return "beq $" + register(rs) + ", $" +
                 register(rt) + ", TARGET";
