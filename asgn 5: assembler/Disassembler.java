@@ -235,41 +235,39 @@ public class Disassembler {
     Set<Integer> targets = findTargets(text);
     StringBuilder output = new StringBuilder();
 
-   output.append("\n.text\n");
-   output.append(".globl main\n");
-   output.append("main:\n");
+        if (data.length > 0) {
+            output.append("data_bytes: .byte ");
 
-    if (data.length > 0) {
-        output.append("data_bytes: .byte ");
+            for (int i = 0; i < data.length; i++) {
+                if (i > 0) {
+                    output.append(", ");
+                }
 
-        for (int i = 0; i < data.length; i++) {
-            if (i > 0) {
-                output.append(", ");
+                output.append(data[i] & 0xFF);
             }
 
-            output.append(data[i] & 0xFF);
+            output.append("\n");
+        }
+        
+        output.append("\n.text\n");
+        output.append(".globl main\n");
+        output.append("main:\n");
+
+        for (int i = 0; i < text.length; i += 4) {
+            int pc = TEXT_BASE + i;
+            int instruction = word(text, i);
+
+            if (targets.contains(pc)) {
+                output.append(labelName(pc)).append(":\n");
+            }
+
+            output.append("    ")
+                .append(decode(instruction, pc))
+                .append("\n");
         }
 
-        output.append("\n");
+        return output.toString();
     }
-
-    output.append("\n.text\n");
-
-    for (int i = 0; i < text.length; i += 4) {
-        int pc = TEXT_BASE + i;
-        int instruction = word(text, i);
-
-        if (targets.contains(pc)) {
-            output.append(labelName(pc)).append(":\n");
-        }
-
-        output.append("    ")
-              .append(decode(instruction, pc))
-              .append("\n");
-    }
-
-    return output.toString();
-}
 
 }
 
