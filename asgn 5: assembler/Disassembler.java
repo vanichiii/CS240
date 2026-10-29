@@ -236,6 +236,7 @@ public class Disassembler {
     StringBuilder output = new StringBuilder();
 
         if (data.length > 0) {
+            output.append(".data\n");
             output.append("data_bytes: .byte ");
 
             for (int i = 0; i < data.length; i++) {

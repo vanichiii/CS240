@@ -2,6 +2,8 @@
 data_bytes: .byte 70, 105, 122, 122, 0, 66, 117, 122, 122, 0, 70, 105, 122, 122, 66, 117, 122, 122, 0, 10, 0
 
 .text
+.globl main
+main:
     addiu $t0, $zero, 1
 L00400004:
     addiu $t1, $zero, 15
